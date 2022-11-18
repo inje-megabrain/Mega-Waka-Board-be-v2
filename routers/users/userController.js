@@ -7,6 +7,8 @@ export const getUsers = (req, res, next) => {
       .replace("hr", ":")
       .replace("mins", "")
       .replace("min", "")
+      .replace("secs", "")
+      .replace("sec", "")
       .replaceAll(" ", "");
     if (newDay.indexOf(":") === -1) {
       newDay = "0:" + newDay;
