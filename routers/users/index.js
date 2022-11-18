@@ -1,5 +1,5 @@
 import { Router as userRouter } from "express";
-import { getUsers, updateTime } from "./userController.js";
+import { addUser, getUsers, updateTime } from "./userController.js";
 
 const router = userRouter();
 
@@ -64,7 +64,7 @@ router.get("/users", getUsers);
 
 /**
  * @swagger
- *  /api/user/update/:updateDay:
+ *  /api/user/update:
  *    post:
  *      tags: [Users]
  *      description: 유저 데이터 갱신 param(7, 14, 30)
@@ -82,5 +82,35 @@ router.get("/users", getUsers);
  *       200:
  *        description: 유저 업데이트 성공
  */
-router.post("/update/:updateDay", updateTime);
+router.post("/update", updateTime);
+
+/**
+ * @swagger
+ *  /api/user/add-user:
+ *    post:
+ *      tags: [Users]
+ *      description: 유저 추가 api
+ *      produces:
+ *      - application/json
+ *      parameters:
+ *        - in: query
+ *          name: username
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          name: apikey
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          name: organization
+ *          required: true
+ *          schema:
+ *            type: string
+ *      responses:
+ *       200:
+ *        description: 유저 업데이트 성공
+ */
+router.post("/add-user", addUser);
 export default router;
