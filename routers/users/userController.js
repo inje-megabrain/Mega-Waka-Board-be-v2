@@ -134,7 +134,7 @@ export const addUser = async (req, res, next) => {
 export const getUser = (req, res, next) => {
   const { id } = req.query;
   connection.query(
-    `SELECT api_key FROM megatime.member WHERE member_id LIKE '${id}'`,
+    `SELECT * FROM megatime.member WHERE member_id LIKE '${id}'`,
     async (error, row) => {
       if (error) {
         res.status(500).send("error");
@@ -187,6 +187,7 @@ export const getUser = (req, res, next) => {
         });
       });
       res.send({
+        info: data.cummulative_total,
         editors: newEditorData,
         languages: newLanguageData,
         projects: newProjectData,
