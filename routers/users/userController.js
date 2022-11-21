@@ -191,7 +191,7 @@ export const getUser = (req, res, next) => {
               seconds: item.total_seconds,
             });
           });
-          date.setDate(date.getDate() + index);
+          date.setDate(date.getDate() + index + 1);
           newWeekLabel.push(date.getUTCMonth() + 1 + "/" + date.getUTCDate());
           newWeekData.push(i.grand_total.total_seconds);
         });
