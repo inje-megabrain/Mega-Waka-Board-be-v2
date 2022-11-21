@@ -13,6 +13,12 @@ const router = userRouter();
  *      tags: [Users]
  *      parameters:
  *        - in: query
+ *          name: day
+ *          required: true
+ *          schema:
+ *            type: integer
+ *            description: 날짜
+ *        - in: query
  *          name: id
  *          required: true
  *          schema:

@@ -132,14 +132,17 @@ export const addUser = async (req, res, next) => {
 };
 
 export const getUser = (req, res, next) => {
-  let err = false;
-  const { id } = req.query;
+  const { day, id } = req.query;
+  if ([7, 14, 30].indexOf(parseInt(day)) == -1) {
+    res.status(400).send("param 오류");
+    return;
+  }
   connection.query(
     `SELECT * FROM megatime.member WHERE member_id LIKE '${id}'`,
     async (error, row) => {
       if (row.length !== 0) {
         const { data } = await axios.get(
-          `https://wakatime.com/api/v1/users/current/summaries?range=last_7_days`,
+          `https://wakatime.com/api/v1/users/current/summaries?range=last_${day}_days`,
           {
             headers: {
               Authorization: `Basic ${row[0].api_key}`,
