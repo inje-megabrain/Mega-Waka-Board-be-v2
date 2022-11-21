@@ -149,11 +149,15 @@ export const getUser = (req, res, next) => {
             },
           }
         );
+
         let newEditorData = [];
         let newLanguageData = [];
         let newProjectData = [];
+        let newWeekLabel = [];
         let newWeekData = [];
-        data.data.map((i) => {
+        data.data.map((i, index) => {
+          const date = new Date(data.start);
+
           i.editors.map((item) => {
             for (let i = 0; i < newEditorData.length; i++) {
               if (item.name === newEditorData[i].name) {
@@ -187,11 +191,13 @@ export const getUser = (req, res, next) => {
               seconds: item.total_seconds,
             });
           });
+          date.setDate(date.getDate() + index);
+          newWeekLabel.push(date.getUTCMonth() + 1 + "/" + date.getUTCDate());
           newWeekData.push(i.grand_total.total_seconds);
         });
         res.send({
           username: row[0].username,
-          weekData: newWeekData,
+          weekData: { label: newWeekLabel, data: newWeekData },
           day_7_info: data.cummulative_total,
           editors: newEditorData,
           languages: newLanguageData,
