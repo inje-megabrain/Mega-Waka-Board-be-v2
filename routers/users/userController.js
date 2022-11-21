@@ -185,7 +185,8 @@ export const getUser = (req, res, next) => {
           });
         });
         res.send({
-          info: data.cummulative_total,
+          username: row[0].username,
+          day_7_info: data.cummulative_total,
           editors: newEditorData,
           languages: newLanguageData,
           projects: newProjectData,
