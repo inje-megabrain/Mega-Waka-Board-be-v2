@@ -152,6 +152,7 @@ export const getUser = (req, res, next) => {
         let newEditorData = [];
         let newLanguageData = [];
         let newProjectData = [];
+        let newWeekData = [];
         data.data.map((i) => {
           i.editors.map((item) => {
             for (let i = 0; i < newEditorData.length; i++) {
@@ -186,9 +187,11 @@ export const getUser = (req, res, next) => {
               seconds: item.total_seconds,
             });
           });
+          newWeekData.push(i.grand_total.total_seconds);
         });
         res.send({
           username: row[0].username,
+          weekData: newWeekData,
           day_7_info: data.cummulative_total,
           editors: newEditorData,
           languages: newLanguageData,
