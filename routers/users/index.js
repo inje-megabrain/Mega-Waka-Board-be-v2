@@ -1,7 +1,31 @@
 import { Router as userRouter } from "express";
-import { addUser, getUsers, updateTime } from "./userController.js";
+import { addUser, getUser, getUsers, updateTime } from "./userController.js";
 
 const router = userRouter();
+
+/**
+ * @swagger
+ * paths:
+ *  /api/user/user:
+ *    get:
+ *      summary: "해당 유저 데이터 조회"
+ *      description: "서버에 데이터를 보내지 않고 Get방식으로 요청"
+ *      tags: [Users]
+ *      parameters:
+ *        - in: query
+ *          name: id
+ *          required: true
+ *          schema:
+ *            type: integer
+ *            description: 유저 id
+ *      responses:
+ *        "200":
+ *          description: 해당 유저 정보 시간
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object */
+router.get("/user", getUser);
 
 /**
  * @swagger

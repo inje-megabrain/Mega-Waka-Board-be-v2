@@ -130,3 +130,67 @@ export const addUser = async (req, res, next) => {
     else return res.status(500).send("서버 오류");
   }
 };
+
+export const getUser = (req, res, next) => {
+  const { id } = req.query;
+  connection.query(
+    `SELECT api_key FROM megatime.member WHERE member_id LIKE '${id}'`,
+    async (error, row) => {
+      if (error) {
+        res.status(500).send("error");
+        throw error;
+      }
+      const { data } = await axios.get(
+        `https://wakatime.com/api/v1/users/current/summaries?range=last_7_days`,
+        {
+          headers: {
+            Authorization: `Basic ${row[0].api_key}`,
+          },
+        }
+      );
+      let newEditorData = [];
+      let newLanguageData = [];
+      let newProjectData = [];
+      data.data.map((i) => {
+        i.editors.map((item) => {
+          for (let i = 0; i < newEditorData.length; i++) {
+            if (item.name === newEditorData[i].name) {
+              return (newEditorData[i].seconds += item.total_seconds);
+            }
+          }
+          return newEditorData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+        i.languages.map((item) => {
+          for (let i = 0; i < newLanguageData.length; i++) {
+            if (item.name === newLanguageData[i].name) {
+              return (newLanguageData[i].seconds += item.total_seconds);
+            }
+          }
+          return newLanguageData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+        i.projects.map((item) => {
+          for (let i = 0; i < newProjectData.length; i++) {
+            if (item.name === newProjectData[i].name) {
+              return (newProjectData[i].seconds += item.total_seconds);
+            }
+          }
+          return newProjectData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+      });
+      res.send({
+        editors: newEditorData,
+        languages: newLanguageData,
+        projects: newProjectData,
+      });
+    }
+  );
+};
