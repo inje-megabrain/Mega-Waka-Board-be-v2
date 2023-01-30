@@ -65,7 +65,7 @@ export const updateTime = (req, res, next) => {
                 : updateDay == 14
                 ? "last_14_days"
                 : "last_30_days"
-            } = '${timeData.data.cummulative_total.text}', ${
+            } = '${timeData.data.cumulative_total.text}', ${
               updateDay == 7
                 ? "updated_time_7days"
                 : updateDay == 14
@@ -149,7 +149,6 @@ export const getUser = (req, res, next) => {
             },
           }
         );
-
         let newEditorData = [];
         let newLanguageData = [];
         let newProjectData = [];
@@ -198,7 +197,7 @@ export const getUser = (req, res, next) => {
         res.send({
           username: row[0].username,
           weekData: { label: newWeekLabel, data: newWeekData },
-          day_7_info: data.cummulative_total,
+          day_7_info: data.cumulative_total,
           editors: newEditorData,
           languages: newLanguageData,
           projects: newProjectData,
