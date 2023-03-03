@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
-    image: jongung/waka-be:1.0
+    image: jongung/waka-be:1.1
     restart: always
     build:
       context: .
@@ -14,15 +14,16 @@ services:
       SQL_ID: root
       SQL_PASSWORD: mega123
       SQL_PORT: 3306
-  
+
   mysql:
     image: library/mysql:5.7
+    platform: linux/amd64
     restart: always
     volumes:
       - db_datas:/var/lib/mysql
     environment:
       MYSQL_DATABASE: megatime
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_HOST: "%"
       MYSQL_ROOT_PASSWORD: mega123
       TZ: Asia/Seoul
     command:
