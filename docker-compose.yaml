@@ -4,6 +4,9 @@ services:
   backend:
     image: jongung/waka-be:1.0
     restart: always
+    build:
+      context: .
+      dockerfile: ./dockerfile
     ports:
       - 18083:18083
     environment:
