@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
 });
 
 connection.connect((error) => {
-  if (error) throw error;
+  if (error) console.log(error);
 });
 
 export default connection;
