@@ -4,10 +4,10 @@
   <h1 align="center">메가브레인 와카타임 대시보드 Back-End</h3>
 
   <p align="center">
-    <img src="https://skillicons.dev/icons?i=js,mysql,express">
+    <img src="https://skillicons.dev/icons?i=js,mysql,express,docker,kubernetes">
     <br />
     <br />
-    <strong>Skill: Javascript, Mysql, Express.js	</strong>
+    <strong>Skill: Javascript, Mysql, Express.js, docker	</strong>
 
   </p>
 </div>
