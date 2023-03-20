@@ -36,6 +36,7 @@ export const getUsers = (req, res, next) => {
         });
         res.send(newRow);
       } catch (e) {
+        console.log(e);
         res.status(500).send(e);
       }
     }
@@ -203,6 +204,7 @@ export const getUser = (req, res, next) => {
           projects: newProjectData,
         });
       } else {
+        console.log(error);
         res.status(500).send("서버 오류");
       }
     }
