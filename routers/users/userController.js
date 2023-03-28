@@ -1,6 +1,6 @@
-import connection from "../../database.js";
+import { connection, handleDisconnect } from "../../database.js";
 import axios from "axios";
-export const getUsers = (req, res, next) => {
+export const getUsers = async (req, res, next) => {
   const parseDate = (day) => {
     let newDay = day
       .replace("hrs", ":")
@@ -18,6 +18,7 @@ export const getUsers = (req, res, next) => {
     }
     return newDay;
   };
+  await handleDisconnect();
   connection.query(
     "SELECT member_id, username, last_7_days, last_14_days, last_30_days, Organization FROM megatime.member",
     (error, row) => {
@@ -35,18 +36,21 @@ export const getUsers = (req, res, next) => {
           );
         });
         res.send(newRow);
+        connection.end();
       } catch (e) {
         console.log(e);
         res.status(500).send(e);
+        connection.end();
       }
     }
   );
 };
 
-export const updateTime = (req, res, next) => {
+export const updateTime = async (req, res, next) => {
   const { updateDay } = req.query;
   const date = new Date();
   try {
+    await handleDisconnect();
     connection.query("SELECT * FROM megatime.member", async (error, row) => {
       if (error) throw error;
       await Promise.all(
@@ -82,8 +86,10 @@ export const updateTime = (req, res, next) => {
         })
       );
       res.send("업데이트 성공!");
+      connection.end();
     });
   } catch (e) {
+    connection.end();
     res.status(500).send(e);
   }
 };
@@ -102,6 +108,7 @@ export const addUser = async (req, res, next) => {
   };
   try {
     await isApiValid();
+    await handleDisconnect();
     try {
       connection.query(
         `SELECT * FROM megatime.member WHERE username LIKE '${username}'`,
@@ -115,8 +122,10 @@ export const addUser = async (req, res, next) => {
               connection.query(
                 `INSERT INTO megatime.member (api_key, username, last_7_days, last_14_days, last_30_days, organization, updated_time_7days, updated_time_14days, updated_time_30days) VALUES ('${apikey}', '${username}', '0:0', '0:0', '0:0', '${organization}', '${koDate}', '${koDate}', '${koDate}')`
               );
+              connection.end();
               return res.send("등록 성공!");
             } catch (e) {
+              connection.end();
               return res.status(500).send(e);
             }
           }
@@ -132,12 +141,13 @@ export const addUser = async (req, res, next) => {
   }
 };
 
-export const getUser = (req, res, next) => {
+export const getUser = async (req, res, next) => {
   const { day, id } = req.query;
   if ([7, 14, 30].indexOf(parseInt(day)) == -1) {
     res.status(400).send("param 오류");
     return;
   }
+  await handleDisconnect();
   connection.query(
     `SELECT * FROM megatime.member WHERE member_id LIKE '${id}'`,
     async (error, row) => {
@@ -195,6 +205,7 @@ export const getUser = (req, res, next) => {
           newWeekLabel.push(date.getUTCMonth() + 1 + "/" + date.getUTCDate());
           newWeekData.push(i.grand_total.total_seconds);
         });
+        connection.end();
         res.send({
           username: row[0].username,
           weekData: { label: newWeekLabel, data: newWeekData },
@@ -205,6 +216,7 @@ export const getUser = (req, res, next) => {
         });
       } else {
         console.log(error);
+        connection.end();
         res.status(500).send("서버 오류");
       }
     }

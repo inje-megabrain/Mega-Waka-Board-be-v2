@@ -12,12 +12,11 @@ const db_config = {
 
 var connection;
 
-function handleDisconnect() {
+async function handleDisconnect() {
   //함수 정의
   connection = mysql.createConnection(db_config);
 
   connection.connect(function (err) {
-    console.log("DBConnected!");
     if (err) {
       console.log("error when connecting to db:", err);
       setTimeout(handleDisconnect, 2000); //연결 실패시 2초 후 다시 연결
@@ -37,4 +36,4 @@ function handleDisconnect() {
 
 handleDisconnect(); //require과 동시에 실행됨
 
-export default connection;
+export { connection, handleDisconnect };
