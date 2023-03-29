@@ -31,6 +31,7 @@ const postWeekRank = (client) => {
       today.getDate() - 7
     );
     scheduleJob({ hour: 15, minute: 00, dayOfWeek: 5 }, async () => {
+      await updateTime();
       const querySnapshot = await getDocs(collection(fireStore, "users"));
       const users = [];
       querySnapshot.forEach((doc) => {
