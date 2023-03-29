@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://203.241.228.50:18083", // 요청 URL
+        url: "https://wakaserver.megabrain.kr", // 요청 URL
       },
       {
         url: "http://localhost:18083", // 요청 URL

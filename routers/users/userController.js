@@ -3,6 +3,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   updateDoc,
 } from "firebase/firestore";
@@ -104,5 +105,87 @@ const getWakaApiValid = async (apikey) => {
   } catch (error) {
     console.log(error);
     return false;
+  }
+};
+
+export const getUser = async (req, res, next) => {
+  const { day, id } = req.query;
+  if ([7, 14, 30].indexOf(parseInt(day)) == -1) {
+    res.status(400).send("param 오류");
+    return;
+  }
+
+  try {
+    const querySnapshot = await getDoc(doc(fireStore, "users", id));
+
+    if (querySnapshot.exists()) {
+      const userData = querySnapshot.data();
+      const { data } = await axios.get(
+        `https://wakatime.com/api/v1/users/current/summaries?range=last_${day}_days`,
+        {
+          headers: {
+            Authorization: `Basic ${btoa(userData.apikey)}`,
+          },
+        }
+      );
+      let newEditorData = [];
+      let newLanguageData = [];
+      let newProjectData = [];
+      let newWeekLabel = [];
+      let newWeekData = [];
+      data.data.map((i, index) => {
+        const date = new Date(data.start);
+
+        i.editors.map((item) => {
+          for (let i = 0; i < newEditorData.length; i++) {
+            if (item.name === newEditorData[i].name) {
+              return (newEditorData[i].seconds += item.total_seconds);
+            }
+          }
+          return newEditorData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+        i.languages.map((item) => {
+          for (let i = 0; i < newLanguageData.length; i++) {
+            if (item.name === newLanguageData[i].name) {
+              return (newLanguageData[i].seconds += item.total_seconds);
+            }
+          }
+          return newLanguageData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+        i.projects.map((item) => {
+          for (let i = 0; i < newProjectData.length; i++) {
+            if (item.name === newProjectData[i].name) {
+              return (newProjectData[i].seconds += item.total_seconds);
+            }
+          }
+          return newProjectData.push({
+            name: item.name,
+            seconds: item.total_seconds,
+          });
+        });
+        date.setDate(date.getDate() + index + 1);
+        newWeekLabel.push(date.getUTCMonth() + 1 + "/" + date.getUTCDate());
+        newWeekData.push(i.grand_total.total_seconds);
+      });
+      res.send({
+        username: userData.username,
+        weekData: { label: newWeekLabel, data: newWeekData },
+        day_7_info: data.cumulative_total,
+        editors: newEditorData,
+        languages: newLanguageData,
+        projects: newProjectData,
+      });
+    } else {
+      res.send("존재하지 않는 유저입니다.");
+    }
+  } catch (e) {
+    console.log(e);
+    res.send("오류 발생");
   }
 };
