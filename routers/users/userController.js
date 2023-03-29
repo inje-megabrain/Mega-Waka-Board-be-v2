@@ -1,224 +1,108 @@
-import { connection, handleDisconnect } from "../../database.js";
 import axios from "axios";
-export const getUsers = async (req, res, next) => {
-  const parseDate = (day) => {
-    let newDay = day
-      .replace("hrs", ":")
-      .replace("hr", ":")
-      .replace("mins", "")
-      .replace("min", "")
-      .replace("secs", "")
-      .replace("sec", "")
-      .replaceAll(" ", "");
-    if (newDay.indexOf(":") === -1) {
-      newDay = "0:" + newDay;
-    }
-    if (newDay.indexOf(":") === newDay.length - 1) {
-      newDay = newDay + "0";
-    }
-    return newDay;
-  };
-  await handleDisconnect();
-  connection.query(
-    "SELECT member_id, username, last_7_days, last_14_days, last_30_days, Organization FROM megatime.member",
-    (error, row) => {
-      if (error) throw error;
-      const date = new Date();
-      try {
-        const newRow = row.map((item) => {
-          return (
-            item && {
-              ...item,
-              last_7_days: parseDate(item.last_7_days),
-              last_14_days: parseDate(item.last_14_days),
-              last_30_days: parseDate(item.last_30_days),
-            }
-          );
-        });
-        res.send(newRow);
-        connection.end();
-      } catch (e) {
-        console.log(e);
-        res.status(500).send(e);
-        connection.end();
-      }
-    }
-  );
-};
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore";
+import fireStore from "../../Firebase.js";
 
 export const updateTime = async (req, res, next) => {
   const { updateDay } = req.query;
-  const date = new Date();
+  if (updateDay !== "7" && updateDay !== "14" && updateDay !== "30") {
+    return res.send("updateDay param이 잘못되었습니다.");
+  }
   try {
-    await handleDisconnect();
-    connection.query("SELECT * FROM megatime.member", async (error, row) => {
-      if (error) throw error;
-      await Promise.all(
-        row.map(async (item) => {
-          const timeData = await axios.get(
-            `https://wakatime.com/api/v1/users/current/summaries/?range=Last_${updateDay}_days`,
-            {
-              headers: {
-                Authorization: `Basic ${item.api_key}`,
-              },
-            }
-          );
-          await connection.query(
-            `UPDATE megatime.member SET ${
-              updateDay == 7
-                ? "last_7_days"
-                : updateDay == 14
-                ? "last_14_days"
-                : "last_30_days"
-            } = '${timeData.data.cumulative_total.text}', ${
-              updateDay == 7
-                ? "updated_time_7days"
-                : updateDay == 14
-                ? "updated_time_14days"
-                : "updated_time_30days"
-            } = '${date.toLocaleString("ko-kr")}' WHERE member_id = ${
-              item.member_id
-            }`,
-            (error) => {
-              if (error) throw error;
-            }
-          );
-        })
-      );
-      res.send("업데이트 성공!");
-      connection.end();
+    const querySnapshot = await getDocs(collection(fireStore, "users"));
+    const userData = [];
+    await querySnapshot.forEach(async (doc) => {
+      userData.push({ apikey: doc.data().apikey, id: doc.id });
     });
+
+    for await (const user of userData) {
+      const result = await axios.get(
+        `https://wakatime.com/api/v1/users/current/summaries/?range=Last_${updateDay}_days`,
+        {
+          headers: {
+            Authorization: `Basic ${btoa(user.apikey)}`,
+          },
+        }
+      );
+      if (result.data.cumulative_total.digital) {
+        const userDoc = doc(fireStore, "users", user.id);
+        if (updateDay === "7") {
+          await updateDoc(userDoc, {
+            "7days": result.data.cumulative_total.digital,
+          });
+        } else if (updateDay === "14") {
+          await updateDoc(userDoc, {
+            "14days": result.data.cumulative_total.digital,
+          });
+        } else {
+          await updateDoc(userDoc, {
+            "30days": result.data.cumulative_total.digital,
+          });
+        }
+      }
+    }
+    res.send("업데이트 성공!");
   } catch (e) {
-    connection.end();
+    console.log(e);
     res.status(500).send(e);
   }
 };
 
 export const addUser = async (req, res, next) => {
   const { username, apikey, organization } = req.query;
-  const isApiValid = async () => {
-    await axios.get(
-      `https://wakatime.com/api/v1/users/current/summaries?range=Today`,
-      {
-        headers: {
-          Authorization: `Basic ${apikey}`,
-        },
-      }
-    );
-  };
-  try {
-    await isApiValid();
-    await handleDisconnect();
-    try {
-      connection.query(
-        `SELECT * FROM megatime.member WHERE username LIKE '${username}'`,
-        (error, row) => {
-          if (row.length > 0) {
-            return res.status(400).send("등록된 사용자입니다.");
-          } else {
-            try {
-              const date = new Date();
-              const koDate = date.toLocaleString("ko-kr");
-              connection.query(
-                `INSERT INTO megatime.member (api_key, username, last_7_days, last_14_days, last_30_days, organization, updated_time_7days, updated_time_14days, updated_time_30days) VALUES ('${apikey}', '${username}', '0:0', '0:0', '0:0', '${organization}', '${koDate}', '${koDate}', '${koDate}')`
-              );
-              connection.end();
-              return res.send("등록 성공!");
-            } catch (e) {
-              connection.end();
-              return res.status(500).send(e);
-            }
-          }
-        }
-      );
-    } catch (e) {
-      return res.status(500).send();
+
+  const isKeyValid = await getWakaApiValid(apikey);
+  if (!isKeyValid) {
+    res.send("apikey가 유효하지 않습니다.");
+    return;
+  }
+  const querySnapshot = await getDocs(collection(fireStore, "users"));
+  let isExist = false;
+  querySnapshot.forEach((doc) => {
+    if (doc.data().apikey === apikey) {
+      isExist = true;
+      return;
     }
+  });
+  if (isExist) {
+    res.send("이미 등록된 apikey입니다.");
+    return;
+  }
+  try {
+    await addDoc(collection(fireStore, "users"), {
+      username: username,
+      apikey: apikey,
+      organization: organization,
+      "7days": "0:0",
+      "14days": "0:0",
+      "30days": "0:0",
+    });
+    res.send("등록 성공");
   } catch (e) {
-    if (e.response.status === 401)
-      return res.status(401).send("잘못된 api key");
-    else return res.status(500).send("서버 오류");
+    console.log(e);
+    res.send("등록 실패!");
+    return;
   }
 };
 
-export const getUser = async (req, res, next) => {
-  const { day, id } = req.query;
-  if ([7, 14, 30].indexOf(parseInt(day)) == -1) {
-    res.status(400).send("param 오류");
-    return;
-  }
-  await handleDisconnect();
-  connection.query(
-    `SELECT * FROM megatime.member WHERE member_id LIKE '${id}'`,
-    async (error, row) => {
-      if (row.length !== 0) {
-        const { data } = await axios.get(
-          `https://wakatime.com/api/v1/users/current/summaries?range=last_${day}_days`,
-          {
-            headers: {
-              Authorization: `Basic ${row[0].api_key}`,
-            },
-          }
-        );
-        let newEditorData = [];
-        let newLanguageData = [];
-        let newProjectData = [];
-        let newWeekLabel = [];
-        let newWeekData = [];
-        data.data.map((i, index) => {
-          const date = new Date(data.start);
-
-          i.editors.map((item) => {
-            for (let i = 0; i < newEditorData.length; i++) {
-              if (item.name === newEditorData[i].name) {
-                return (newEditorData[i].seconds += item.total_seconds);
-              }
-            }
-            return newEditorData.push({
-              name: item.name,
-              seconds: item.total_seconds,
-            });
-          });
-          i.languages.map((item) => {
-            for (let i = 0; i < newLanguageData.length; i++) {
-              if (item.name === newLanguageData[i].name) {
-                return (newLanguageData[i].seconds += item.total_seconds);
-              }
-            }
-            return newLanguageData.push({
-              name: item.name,
-              seconds: item.total_seconds,
-            });
-          });
-          i.projects.map((item) => {
-            for (let i = 0; i < newProjectData.length; i++) {
-              if (item.name === newProjectData[i].name) {
-                return (newProjectData[i].seconds += item.total_seconds);
-              }
-            }
-            return newProjectData.push({
-              name: item.name,
-              seconds: item.total_seconds,
-            });
-          });
-          date.setDate(date.getDate() + index + 1);
-          newWeekLabel.push(date.getUTCMonth() + 1 + "/" + date.getUTCDate());
-          newWeekData.push(i.grand_total.total_seconds);
-        });
-        connection.end();
-        res.send({
-          username: row[0].username,
-          weekData: { label: newWeekLabel, data: newWeekData },
-          day_7_info: data.cumulative_total,
-          editors: newEditorData,
-          languages: newLanguageData,
-          projects: newProjectData,
-        });
-      } else {
-        console.log(error);
-        connection.end();
-        res.status(500).send("서버 오류");
+const getWakaApiValid = async (apikey) => {
+  try {
+    await axios.get(
+      "https://wakatime.com/api/v1/users/current/summaries?range=Today",
+      {
+        headers: {
+          Authorization: `Basic ${btoa(apikey)}`,
+        },
       }
-    }
-  );
+    );
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
 };

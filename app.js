@@ -7,7 +7,5 @@ const app = express();
 app.listen(18083);
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use("/api", api);
-
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
