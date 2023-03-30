@@ -2,6 +2,8 @@ import { EmbedBuilder } from "discord.js";
 import { collection, getDocs } from "firebase/firestore";
 import { scheduleJob } from "node-schedule";
 import fireStore from "../Firebase.js";
+import updateUser from "../routers/users/updateUser.js";
+import { updateTime } from "../routers/users/userController.js";
 
 const knowDaysValue = (data) => {
   return data.sort((a, b) => {
@@ -30,8 +32,8 @@ const postWeekRank = (client) => {
       today.getMonth(),
       today.getDate() - 7
     );
-    scheduleJob({ hour: 15, minute: 00, dayOfWeek: 5 }, async () => {
-      await updateTime();
+    scheduleJob({ hour: 15, minute: 0, dayOfWeek: 5 }, async () => {
+      await updateUser("7");
       const querySnapshot = await getDocs(collection(fireStore, "users"));
       const users = [];
       querySnapshot.forEach((doc) => {
